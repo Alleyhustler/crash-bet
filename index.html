@@ -1,1074 +1,917 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MemeCrash - Predict The Dip!</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-  <style>
-    :root {
-      --primary: #6d28d9;
-      --secondary: #4c1d95;
-      --accent: #10b981;
-      --background: #0f172a;
-      --card: #1e293b;
-      --text: #e2e8f0;
-      --text-secondary: #94a3b8;
-    }
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', system-ui, sans-serif;
-    }
-    
-    body {
-      background-color: var(--background);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
-    
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 0;
-      margin-bottom: 2rem;
-    }
-    
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-    
-    .logo span {
-      color: var(--accent);
-    }
-    
-    .connect-wallet {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .connect-wallet:hover {
-      background-color: var(--secondary);
-    }
-    
-    .wallet-info {
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .wallet-address {
-      font-family: monospace;
-      font-size: 0.875rem;
-    }
-    
-    .wallet-balance {
-      background-color: var(--primary);
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-      font-weight: 600;
-    }
-    
-    main {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 2rem;
-    }
-    
-    .chart-container {
-      background-color: var(--card);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      position: relative;
-    }
-    
-    .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    
-    .chart-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    
-    .live-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--accent);
-      font-weight: 600;
-    }
-    
-    .live-dot {
-      width: 10px;
-      height: 10px;
-      background-color: var(--accent);
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-    
-    @keyframes pulse {
-      0% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-      100% {
-        opacity: 1;
-      }
-    }
-    
-    .chart-canvas {
-      width: 100%;
-      height: 300px;
-    }
-    
-    .game-info {
-      background-color: var(--card);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    
-    .game-status {
-      text-align: center;
-    }
-    
-    .game-status h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    .game-status .time {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-    
-    .game-status .status {
-      margin-top: 0.5rem;
-      font-weight: 600;
-    }
-    
-    .game-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    
-    .stat-card {
-      background-color: rgba(255, 255, 255, 0.05);
-      padding: 1rem;
-      border-radius: 0.5rem;
-      text-align: center;
-    }
-    
-    .stat-card .label {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-bottom: 0.5rem;
-    }
-    
-    .stat-card .value {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    
-    .bet-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    
-    .input-group label {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-    
-    .input-group input {
-      background-color: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: var(--text);
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      font-size: 1rem;
-    }
-    
-    .input-group input:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    
-    .place-bet {
-      background-color: var(--accent);
-      color: white;
-      border: none;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 0.5rem;
-    }
-    
-    .place-bet:hover {
-      opacity: 0.9;
-    }
-    
-    .place-bet:disabled {
-      background-color: #475569;
-      cursor: not-allowed;
-    }
-    
-    .past-games {
-      margin-top: 2rem;
-    }
-    
-    .past-games h2 {
-      margin-bottom: 1rem;
-      font-size: 1.25rem;
-    }
-    
-    .games-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-    
-    .game-card {
-      background-color: var(--card);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .game-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .game-card-title {
-      font-weight: 600;
-    }
-    
-    .game-card-time {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-    
-    .game-card-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-    
-    .game-card-stat {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .game-card-stat .label {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-    
-    .game-card-stat .value {
-      font-weight: 600;
-    }
-    
-    .game-card-winner {
-      background-color: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 0.5rem;
-      padding: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .game-card-winner .label {
-      font-size: 0.875rem;
-    }
-    
-    .game-card-winner .value {
-      font-weight: 600;
-      color: var(--accent);
-    }
-    
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s;
-    }
-    
-    .modal.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    
-    .modal-content {
-      background-color: var(--card);
-      border-radius: 1rem;
-      padding: 2rem;
-      width: 90%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-    
-    .modal-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    
-    .modal-close {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 1.5rem;
-      cursor: pointer;
-    }
-    
-    .result-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
-      text-align: center;
-    }
-    
-    .result-icon {
-      font-size: 3rem;
-      color: var(--accent);
-    }
-    
-    .result-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-    
-    .result-message {
-      color: var(--text-secondary);
-      margin-bottom: 1rem;
-    }
-    
-    .result-stats {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    
-    .result-stat {
-      background-color: rgba(255, 255, 255, 0.05);
-      padding: 1rem;
-      border-radius: 0.5rem;
-    }
-    
-    .result-stat .label {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-bottom: 0.5rem;
-    }
-    
-    .result-stat .value {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    
-    .result-actions {
-      display: flex;
-      gap: 1rem;
-      width: 100%;
-    }
-    
-    .result-actions button {
-      flex: 1;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .primary-btn {
-      background-color: var(--accent);
-      color: white;
-      border: none;
-    }
-    
-    .primary-btn:hover {
-      opacity: 0.9;
-    }
-    
-    .secondary-btn {
-      background-color: transparent;
-      color: var(--text);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .secondary-btn:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-    
-    @media (max-width: 768px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-      
-      .wallet-address {
-        display: none;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrashCoin Predictor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #ff6b35;
+            --secondary-color: #f7c59f;
+            --dark-color: #1a1a2e;
+            --light-color: #e6e6e6;
+            --success-color: #06d6a0;
+            --danger-color: #ef476f;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #0f0f1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        header {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .stats-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stats-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .stats-label {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container {
+            background-color: rgba(26, 26, 46, 0.8);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .current-price {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .price-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .price-change {
+            font-size: 1rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .positive {
+            background-color: rgba(6, 214, 160, 0.2);
+            color: var(--success-color);
+        }
+        
+        .negative {
+            background-color: rgba(239, 71, 111, 0.2);
+            color: var(--danger-color);
+        }
+        
+        canvas {
+            width: 100%;
+            height: 400px;
+        }
+        
+        .control-panel {
+            background-color: rgba(26, 26, 46, 0.8);
+            border-radius: 10px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .prediction-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        label {
+            font-size: 1rem;
+            color: var(--secondary-color);
+        }
+        
+        input, select {
+            padding: 0.8rem;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        button {
+            padding: 1rem;
+            border-radius: 5px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #e85a2a;
+        }
+        
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status.active {
+            background-color: rgba(6, 214, 160, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status.waiting {
+            background-color: rgba(255, 209, 102, 0.2);
+            color: #ffd166;
+        }
+        
+        .status.crashed {
+            background-color: rgba(239, 71, 111, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .status-text {
+            margin-bottom: 0.5rem;
+        }
+        
+        .countdown {
+            font-size: 1.5rem;
+        }
+        
+        .leaderboard {
+            margin-top: 2rem;
+            background-color: rgba(26, 26, 46, 0.8);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .leaderboard-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .leaderboard-table th {
+            color: var(--secondary-color);
+            font-weight: normal;
+        }
+        
+        .winner {
+            background-color: rgba(6, 214, 160, 0.1);
+        }
+        
+        .round-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .jackpot {
+            font-size: 1.2rem;
+        }
+        
+        .jackpot-value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .round-count {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: var(--dark-color);
+            border-radius: 10px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .modal-text {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .modal-btn {
+            padding: 0.8rem 1.5rem;
+        }
+        
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .timer-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1rem;
+            position: relative;
+        }
+        
+        .timer-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 10;
+        }
+        
+        .timer-progress {
+            fill: none;
+            stroke: var(--primary-color);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
     <header>
-      <div class="logo">
-        Meme<span>Crash</span> 🚀
-      </div>
-      <button id="connectWalletBtn" class="connect-wallet">Connect Wallet</button>
-      <div id="walletInfo" class="wallet-info">
-        <div class="wallet-address" id="walletAddressDisplay">-</div>
-        <div class="wallet-balance" id="walletBalanceDisplay">0 $BET</div>
-      </div>
+        <div class="header-content">
+            <div class="logo">CrashCoin Predictor</div>
+            <div class="stats">
+                <div class="stats-item">
+                    <div class="stats-value" id="totalPlayers">0</div>
+                    <div class="stats-label">PLAYERS</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-value" id="totalJackpot">250</div>
+                    <div class="stats-label">SOL JACKPOT</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-value" id="totalGames">0</div>
+                    <div class="stats-label">GAMES PLAYED</div>
+                </div>
+            </div>
+        </div>
     </header>
     
     <main>
-      <div class="chart-container">
-        <div class="chart-header">
-          <div class="chart-title">Real-time Market</div>
-          <div class="live-indicator">
-            <div class="live-dot"></div>
-            LIVE
-          </div>
-        </div>
-        <canvas id="crashChart" class="chart-canvas"></canvas>
-      </div>
-      
-      <div class="game-info">
-        <div class="game-status">
-          <h2>Next Crash In</h2>
-          <div class="time" id="countdown">00:30</div>
-          <div class="status" id="gameStatus">Waiting for next round</div>
+        <div class="round-info">
+            <div class="jackpot">Current Jackpot: <span class="jackpot-value">250 SOL</span></div>
+            <div class="round-count" id="roundCount">Round #1</div>
         </div>
         
-        <div class="game-stats">
-          <div class="stat-card">
-            <div class="label">Current Jackpot</div>
-            <div class="value" id="jackpotValue">5,000 $BET</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Players Betting</div>
-            <div class="value" id="playerCount">42</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Your Prediction</div>
-            <div class="value" id="userPrediction">-</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Last Crash</div>
-            <div class="value" id="lastCrash">-65.8%</div>
-          </div>
+        <div class="game-container">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">BTC Crash Simulator</div>
+                    <div class="price-container">
+                        <div class="current-price" id="currentPrice">$78,726.62</div>
+                        <div class="price-change negative" id="priceChange">-0.00%</div>
+                    </div>
+                </div>
+                <canvas id="priceChart"></canvas>
+            </div>
+            
+            <div class="control-panel">
+                <div>
+                    <div class="panel-title">Make Your Prediction</div>
+                    <div class="prediction-form">
+                        <div class="form-group">
+                            <label for="predictedPrice">Predicted Crash Price ($)</label>
+                            <input type="number" id="predictedPrice" placeholder="Enter your price prediction" min="0" max="78726.62" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="walletAddress">Your SOL Wallet</label>
+                            <input type="text" id="walletAddress" placeholder="Enter your SOL wallet address">
+                        </div>
+                        <button id="placeBetBtn">Lock In Prediction</button>
+                    </div>
+                </div>
+                
+                <div class="status" id="gameStatus">
+                    <div class="status-text">Waiting for next round...</div>
+                    <div class="countdown" id="countdown">00:30</div>
+                    <svg class="timer-circle" viewBox="0 0 120 120">
+                        <circle class="timer-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="timer-progress" cx="60" cy="60" r="50" id="timerCircle"></circle>
+                    </svg>
+                </div>
+            </div>
         </div>
         
-        <form class="bet-form" id="betForm">
-          <div class="input-group">
-            <label for="betAmount">Bet Amount ($BET)</label>
-            <input type="number" id="betAmount" min="100" step="100" placeholder="Min. 100 $BET">
-          </div>
-          <div class="input-group">
-            <label for="crashPrediction">Crash Prediction (%)</label>
-            <input type="number" id="crashPrediction" min="1" max="100" placeholder="1-100%">
-          </div>
-          <button type="submit" class="place-bet" id="placeBetBtn" disabled>Place Bet</button>
-        </form>
-      </div>
+        <div class="leaderboard">
+            <div class="leaderboard-title">Player Predictions</div>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Prediction</th>
+                        <th>Difference</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <!-- Players will be added here dynamically -->
+                </tbody>
+            </table>
+        </div>
     </main>
     
-    <section class="past-games">
-      <h2>Recent Games</h2>
-      <div class="games-list" id="gamesList">
-        <!-- Past games will be generated here -->
-      </div>
-    </section>
-  </div>
-  
-  <!-- Result Modal -->
-  <div class="modal" id="resultModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">Game Results</div>
-        <button class="modal-close" id="closeModalBtn">&times;</button>
-      </div>
-      <div class="result-content" id="resultContent">
-        <!-- Result content will be generated here -->
-      </div>
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-title">Round Results</div>
+            <div class="modal-text" id="modalText">
+                The Bitcoin price crashed to $65,432.10!<br>
+                <strong>Player123</strong> had the closest prediction and won <strong>250 SOL</strong>!
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn" id="nextRoundBtn">Next Round</button>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <script>
-    // PHANTOM WALLET INTEGRATION
-    let phantomWallet = null;
-    let walletConnected = false;
-    let userBet = null;
-    let userAddress = null;
-    let userBalance = 0;
     
-    // Game State
-    let gameState = {
-      status: 'waiting', // waiting, active, crashed
-      countdown: 30,
-      isCountingDown: true,
-      currentJackpot: 5000,
-      playerCount: 42,
-      lastCrash: -65.8,
-      activePlayers: []
-    };
-    
-    // Chart setup
-    let chart;
-    let chartData = {
-      labels: [],
-      values: []
-    };
-    
-    async function checkForPhantom() {
-      if (window.phantom?.solana?.isPhantom) {
-        return window.phantom.solana;
-      }
-      
-      // If Phantom is not installed
-      console.log("Phantom wallet extension not detected!");
-      alert("Please install Phantom wallet extension to play MemeCrash!");
-      return null;
-    }
-    
-    async function connectWallet() {
-      try {
-        const provider = await checkForPhantom();
-        
-        if (!provider) return;
-        
-        const resp = await provider.connect();
-        userAddress = resp.publicKey.toString();
-        
-        // Display shortened wallet address
-        const shortenedAddress = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
-        
-        // Update UI
-        document.getElementById('walletAddressDisplay').textContent = shortenedAddress;
-        document.getElementById('connectWalletBtn').style.display = 'none';
-        document.getElementById('walletInfo').style.display = 'flex';
-        
-        // Mock wallet balance
-        userBalance = Math.floor(Math.random() * 10000) + 1000;
-        document.getElementById('walletBalanceDisplay').textContent = userBalance + ' $BET';
-        
-        // Enable bet button
-        document.getElementById('placeBetBtn').disabled = false;
-        
-        walletConnected = true;
-        phantomWallet = provider;
-        
-        console.log("Connected to wallet:", userAddress);
-        
-      } catch (err) {
-        console.error("Error connecting to Phantom wallet:", err);
-        alert("Failed to connect wallet: " + err.message);
-      }
-    }
-    
-    // Initialize chart
-    function initChart() {
-      const ctx = document.getElementById('crashChart').getContext('2d');
-      
-      // Initialize with 20 data points at 0%
-      const initialLabels = Array.from({length: 20}, (_, i) => i);
-      const initialData = Array.from({length: 20}, () => 0);
-      
-      chartData.labels = initialLabels;
-      chartData.values = initialData;
-      
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: chartData.labels,
-          datasets: [{
-            label: 'Market Value',
-            data: chartData.values,
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            borderWidth: 3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              display: false
-            },
-            y: {
-              grid: {
-                color: 'rgba(255, 255, 255, 0.05)'
-              },
-              ticks: {
-                color: '#94a3b8',
-                callback: function(value) {
-                  return value + '%';
+    <script>
+        // Chart initialization
+        let chart;
+        let priceHistory = [];
+        let currentPrice = 78726.62;
+        let gameActive = false;
+        let gameInterval;
+        let countdownInterval;
+        let roundNumber = 1;
+        let totalGames = 0;
+        let totalPlayers = 0;
+        let jackpotAmount = 250;
+        let timeLeft = 30;
+        let crashPoint = 0;
+        let gamePhase = "waiting"; // waiting, active, crashed
+        let predictions = [];
+        let wallets = {};
+
+        // DOM Elements
+        const priceElement = document.getElementById('currentPrice');
+        const priceChangeElement = document.getElementById('priceChange');
+        const gameStatusElement = document.getElementById('gameStatus');
+        const countdownElement = document.getElementById('countdown');
+        const timerCircle = document.getElementById('timerCircle');
+        const placeBetBtn = document.getElementById('placeBetBtn');
+        const predictedPriceInput = document.getElementById('predictedPrice');
+        const walletAddressInput = document.getElementById('walletAddress');
+        const leaderboardBody = document.getElementById('leaderboardBody');
+        const resultModal = document.getElementById('resultModal');
+        const modalText = document.getElementById('modalText');
+        const nextRoundBtn = document.getElementById('nextRoundBtn');
+        const roundCountElement = document.getElementById('roundCount');
+        const totalPlayersElement = document.getElementById('totalPlayers');
+        const totalJackpotElement = document.getElementById('totalJackpot');
+        const totalGamesElement = document.getElementById('totalGames');
+
+        // Initialize chart
+        function initializeChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Generate initial price history (last 60 data points)
+            priceHistory = Array(60).fill().map((_, i) => {
+                // Create a slightly increasing trend with small variations
+                return {
+                    time: new Date(Date.now() - (60 - i) * 1000).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        hour12: false
+                    }),
+                    price: currentPrice - (Math.random() * 200 - 100)
+                };
+            });
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: priceHistory.map(data => data.time),
+                    datasets: [{
+                        label: 'BTC Price (USD)',
+                        data: priceHistory.map(data => data.price),
+                        borderColor: '#ff6b35',
+                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return '$' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 0
+                    }
                 }
-              },
-              min: -100,
-              max: 20
+            });
+        }
+
+        // Update chart with new price data
+        function updateChart(newPrice) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false
+            });
+            
+            priceHistory.push({
+                time: timeString,
+                price: newPrice
+            });
+            
+            // Remove oldest data point if we have more than 60
+            if (priceHistory.length > 60) {
+                priceHistory.shift();
             }
-          },
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return context.parsed.y + '%';
+            
+            chart.data.labels = priceHistory.map(data => data.time);
+            chart.data.datasets[0].data = priceHistory.map(data => data.price);
+            
+            chart.update();
+        }
+
+        // Format price display
+        function formatPrice(price) {
+            return '$' + price.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Calculate and display price change
+        function updatePriceChange() {
+            const previousPrice = priceHistory[priceHistory.length - 2]?.price || currentPrice;
+            const percentChange = ((currentPrice - previousPrice) / previousPrice) * 100;
+            
+            priceElement.textContent = formatPrice(currentPrice);
+            priceChangeElement.textContent = percentChange.toFixed(2) + '%';
+            
+            if (percentChange >= 0) {
+                priceChangeElement.className = 'price-change positive';
+            } else {
+                priceChangeElement.className = 'price-change negative';
+            }
+        }
+
+        // Timer functions
+        function startCountdown(seconds) {
+            timeLeft = seconds;
+            updateCountdown();
+            
+            // Set up the timer circle
+            const circumference = 2 * Math.PI * 50;
+            timerCircle.style.strokeDasharray = circumference;
+            timerCircle.style.strokeDashoffset = 0;
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                updateCountdown();
+                
+                // Update timer circle
+                const offset = circumference * (1 - timeLeft / seconds);
+                timerCircle.style.strokeDashoffset = offset;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    startGame();
                 }
-              }
+            }, 1000);
+        }
+
+        function updateCountdown() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            countdownElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Game state functions
+        function waitForNextRound() {
+            gamePhase = "waiting";
+            gameStatusElement.className = "status waiting";
+            gameStatusElement.querySelector(".status-text").textContent = "Waiting for next round...";
+            placeBetBtn.disabled = false;
+            predictedPriceInput.disabled = false;
+            walletAddressInput.disabled = false;
+            
+            startCountdown(30);
+        }
+
+        function startGame() {
+            gamePhase = "active";
+            gameActive = true;
+            
+            // Disable inputs during active game
+            placeBetBtn.disabled = true;
+            predictedPriceInput.disabled = true;
+            walletAddressInput.disabled = true;
+            
+            // Update status
+            gameStatusElement.className = "status active";
+            gameStatusElement.querySelector(".status-text").textContent = "Bitcoin is crashing!";
+            
+            // Determine crash point (between 40-75% of current price)
+            const minCrash = currentPrice * 0.4;
+            const maxCrash = currentPrice * 0.75;
+            crashPoint = minCrash + Math.random() * (maxCrash - minCrash);
+            
+            // Start price update interval
+            gameInterval = setInterval(updateGameState, 500);
+        }
+
+        function updateGameState() {
+            // Calculate price decrease rate - faster as it gets closer to crash point
+            const distanceToTarget = currentPrice - crashPoint;
+            const decreaseRate = Math.max(distanceToTarget * 0.05, 50 + Math.random() * 100);
+            
+            // Update price
+            currentPrice -= decreaseRate;
+            
+            // Update display
+            updateChart(currentPrice);
+            updatePriceChange();
+            
+            // Check if we've reached the crash point
+            if (currentPrice <= crashPoint) {
+                endGame();
             }
-          },
-          animation: {
-            duration: 0
-          }
         }
-      });
-    }
-    
-    // Update chart with new data
-    function updateChart(newValue) {
-      // Remove first data point and add new one
-      chartData.labels.shift();
-      chartData.labels.push(chartData.labels[chartData.labels.length - 1] + 1);
-      
-      chartData.values.shift();
-      chartData.values.push(newValue);
-      
-      // If the value is very negative, adjust y-axis min
-      const minValue = Math.min(...chartData.values);
-      if (minValue < chart.options.scales.y.min) {
-        chart.options.scales.y.min = Math.floor(minValue / 10) * 10;
-      }
-      
-      chart.data.labels = chartData.labels;
-      chart.data.datasets[0].data = chartData.values;
-      chart.update();
-    }
-    
-    // Simulate market fluctuations
-    function simulateMarket() {
-      if (gameState.status === 'waiting') {
-        // Simulate small fluctuations during waiting period
-        const change = (Math.random() * 2 - 1) * 0.5;
-        const lastValue = chartData.values[chartData.values.length - 1];
-        const newValue = Math.max(Math.min(lastValue + change, 10), -10);
-        updateChart(newValue);
-      } else if (gameState.status === 'active') {
-        // Simulate volatile market, trending downward
-        const change = (Math.random() * 10 - 7);
-        const lastValue = chartData.values[chartData.values.length - 1];
-        const newValue = lastValue + change;
-        
-        // Check if market has crashed hard enough
-        if (newValue < -60 && Math.random() < 0.2) {
-          crashMarket(newValue);
-        } else {
-          updateChart(newValue);
+
+        function endGame() {
+            clearInterval(gameInterval);
+            gameActive = false;
+            gamePhase = "crashed";
+            totalGames++;
+            totalGamesElement.textContent = totalGames;
+            
+            // Update status
+            gameStatusElement.className = "status crashed";
+            gameStatusElement.querySelector(".status-text").textContent = "Bitcoin has crashed!";
+            countdownElement.textContent = formatPrice(currentPrice);
+            
+            // Calculate results
+            calculateResults();
+            
+            // Show modal after a short delay
+            setTimeout(showResults, 2000);
         }
-      } else if (gameState.status === 'crashed') {
-        // Do nothing while showing crash results
-      }
-    }
-    
-    // Trigger market crash
-    function crashMarket(currentValue) {
-      gameState.status = 'crashed';
-      
-      // Final crash value (current value minus additional drop)
-      const crashValue = currentValue - (Math.random() * 20 + 10);
-      updateChart(crashValue);
-      
-      // Update UI
-      document.getElementById('gameStatus').textContent = 'Market Crashed!';
-      document.getElementById('lastCrash').textContent = crashValue.toFixed(1) + '%';
-      
-      // Store this crash value for the next round
-      gameState.lastCrash = crashValue;
-      
-      // Show results modal if user placed a bet
-      if (userBet) {
-        showResults(crashValue);
-      }
-      
-      // Reset after a delay
-      setTimeout(() => {
-        resetGame();
-      }, 5000);
-    }
-    
-    // Reset game state and start new round
-    function resetGame() {
-      gameState.status = 'waiting';
-      gameState.countdown = 30;
-      gameState.isCountingDown = true;
-      userBet = null;
-      
-      // Update chart
-      chartData.values = Array.from({length: 20}, () => 0);
-      chart.data.datasets[0].data = chartData.values;
-      chart.options.scales.y.min = -100;
-      chart.update();
-      
-      // Update UI
-      document.getElementById('gameStatus').textContent = 'Waiting for next round';
-      document.getElementById('userPrediction').textContent = '-';
-      document.getElementById('betForm').reset();
-      
-      // Update jackpot and player count for variety
-      gameState.currentJackpot = Math.floor(Math.random() * 5000) + 3000;
-      gameState.playerCount = Math.floor(Math.random() * 30) + 20;
-      
-      document.getElementById('jackpotValue').textContent = gameState.currentJackpot + ' $BET';
-      document.getElementById('playerCount').textContent = gameState.playerCount;
-      
-      // Add this game to past games
-      addPastGame();
-    }
-    
-    // Update countdown timer
-    function updateCountdown() {
-      if (!gameState.isCountingDown) return;
-      
-      if (gameState.countdown > 0) {
-        gameState.countdown--;
-        
-        const minutes = Math.floor(gameState.countdown / 60);
-        const seconds = gameState.countdown % 60;
-        
-        document.getElementById('countdown').textContent = 
-          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-          
-        if (gameState.countdown === 0) {
-          startGame();
+
+        // Prediction and results functions
+        function placeBet() {
+            const predictedPrice = parseFloat(predictedPriceInput.value);
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (isNaN(predictedPrice) || predictedPrice <= 0 || predictedPrice > currentPrice) {
+                alert("Please enter a valid price prediction (greater than 0 and less than current price)");
+                return;
+            }
+            
+            if (!walletAddress) {
+                alert("Please enter your SOL wallet address");
+                return;
+            }
+            
+            // Store wallet address for this prediction
+            const playerId = `Player${predictions.length + 1}`;
+            wallets[playerId] = walletAddress;
+            
+            // Add prediction to list
+            predictions.push({
+                id: playerId,
+                prediction: predictedPrice,
+                difference: 0, // Will be calculated when the game ends
+                result: ""
+            });
+            
+            // Update player count
+            totalPlayers++;
+            totalPlayersElement.textContent = totalPlayers;
+            
+            // Update leaderboard
+            updateLeaderboard();
+            
+            // Clear form
+            predictedPriceInput.value = "";
+            walletAddressInput.value = "";
+            
+            // Disable button for this player (in a real app, you'd check if they've already bet)
+            placeBetBtn.disabled = true;
+            
+            alert("Your prediction has been locked in!");
         }
-      }
-    }
-    
-    // Start the active game phase
-    function startGame() {
-      gameState.status = 'active';
-      gameState.isCountingDown = false;
-      document.getElementById('gameStatus').textContent = 'Market Active - Lock Your Prediction!';
-      document.getElementById('countdown').textContent = 'LIVE';
-      
-      // Disable bet form during active phase if user hasn't placed a bet
-      if (!userBet) {
-        document.getElementById('placeBetBtn').disabled = true;
-      }
-    }
-    
-    // Show results modal
-    function showResults(crashValue) {
-      const diff = Math.abs(crashValue - userBet.prediction);
-      const isWinner = diff < 10; // Win if within 10% of actual crash
-      
-      let resultHTML = '';
-      
-      if (isWinner) {
-        // Calculate winnings - closer predictions win more
-        const accuracy = Math.max(0, 100 - (diff * 10));
-        const winnings = Math.floor(userBet.amount * (1 + (accuracy / 100)));
-        
-        resultHTML = `
-          <div class="result-icon">🎉</div>
-          <div class="result-title">You Win!</div>
-          <div class="result-message">Your prediction was close to the crash value!</div>
-          <div class="result-stats">
-            <div class="result-stat">
-              <div class="label">Your Prediction</div>
-              <div class="value">${userBet.prediction}%</div>
-            </div>
-            <div class="result-stat">
-              <div class="label">Actual Crash</div>
-              <div class="value">${crashValue.toFixed(1)}%</div>
-            </div>
-            <div class="result-stat">
-              <div class="label">Your Bet</div>
-              <div class="value">${userBet.amount} $BET</div>
-            </div>
-            <div class="result-stat">
-              <div class="label">Your Winnings</div>
-              <div class="value">${winnings} $BET</div>
-            </div>
-          </div>
-        `;
-        
-        // Update user balance
-        userBalance += winnings;
-        document.getElementById('walletBalanceDisplay').textContent = userBalance + ' $BET';
-      } else {
-        resultHTML = `
-          <div class="result-icon">📉</div>
-          <div class="result-title">Not Quite!</div>
-          <div class="result-message">Your prediction was off from the crash value.</div>
-          <div class="result-stats">
-            <div class="result-stat">
-              <div class="label">Your Prediction</div>
-              <div class="value">${userBet.prediction}%</div>
-            </div>
-            <div class="result-stat">
-              <div class="label">Actual Crash</div>
-              <div class="value">${crashValue.toFixed(1)}%</div>
-            </div>
-            <div class="result-stat">
-              <div class="label">Your Bet</div>
-              <div class="value">${userBet.amount} $BET</div>
-            </div>
-            <div class="result-stat">
-              <div class="label">Difference</div>
-              <div class="value">${diff.toFixed(1)}%</div>
-            </div>
-          </div>
-        `;
-      }
-      
-      resultHTML += `
-        <div class="result-actions">
-          <button class="primary-btn" id="playAgainBtn">Play Again</button>
-          <button class="secondary-btn" id="closeResultBtn">Close</button>
-        </div>
-      `;
-      
-      document.getElementById('resultContent').innerHTML = resultHTML;
-      document.getElementById('resultModal').classList.add('show');
-      
-      // Add event listeners for modal buttons
-      document.getElementById('playAgainBtn').addEventListener('click', () => {
-        document.getElementById('resultModal').classList.remove('show');
-      });
-      
-      document.getElementById('closeResultBtn').addEventListener('click', () => {
-        document.getElementById('resultModal').classList.remove('show');
-      });
-    }
-    
-    // Add past game to history
-    function addPastGame() {
-      const gamesList = document.getElementById('gamesList');
-      const gameTime = new Date().toLocaleTimeString();
-      
-      // Generate random winner address
-      const winnerAddress = Array.from({length: 6}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('') + '...' + 
-        Array.from({length: 4}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      
-      // Random winner prediction close to crash value
-      const winnerPrediction = Math.abs(gameState.lastCrash) + (Math.random() * 4 - 2);
-      
-      // Create game card HTML
-      const gameCard = document.createElement('div');
-      gameCard.className = 'game-card';
-      gameCard.innerHTML = `
-        <div class="game-card-header">
-          <div class="game-card-title">Game #${Math.floor(Math.random() * 10000)}</div>
-          <div class="game-card-time">${gameTime}</div>
-        </div>
-        <div class="game-card-stats">
-          <div class="game-card-stat">
-            <div class="label">Crash Value</div>
-            <div class="value">${gameState.lastCrash.toFixed(1)}%</div>
-          </div>
-          <div class="game-card-stat">
-            <div class="label">Players</div>
-            <div class="value">${gameState.playerCount}</div>
-          </div>
-          <div class="game-card-stat">
-            <div class="label">Your Bet</div>
-            <div class="value">${userBet ? userBet.amount + ' $BET' : '-'}</div>
-          </div>
-        </div>
-        <div class="game-card-winner">
-          <div class="label">Winner</div>
-          <div class="value">${winnerAddress}</div>
-        </div>
-      `;
-      
-      // Add to the beginning of the list
-      if (gamesList.firstChild) {
-        gamesList.insertBefore(gameCard, gamesList.firstChild);
-      } else {
-        gamesList.appendChild(gameCard);
-      }
-      
-      // Limit to 6 past games
-      if (gamesList.children.length > 6) {
-        gamesList.removeChild(gamesList.lastChild);
-      }
-    }
-    
-    // Handle bet submission
-    function handleBetSubmit(e) {
-      e.preventDefault();
-      
-      if (!walletConnected) {
-        alert("Please connect your wallet first!");
-        return;
-      }
-      
-      const betAmount = parseInt(document.getElementById('betAmount').value);
-      const crashPrediction = parseInt(document.getElementById('crashPrediction').value);
-      
-      // Validation
-      if (isNaN(betAmount) || betAmount < 100) {
-        alert("Please enter a valid bet amount (minimum 100 $BET)");
-        return;
-      }
-      
-      if (isNaN(crashPrediction) || crashPrediction < 1 || crashPrediction > 100) {
-        alert("Please enter a valid crash prediction (1-100%)");
-        return;
-      }
-      
-      if (betAmount > userBalance) {
-        alert("Insufficient balance!");
-        return;
-      }
-      
-      // Place bet
-      userBet = {
-        amount: betAmount,
-        prediction: -crashPrediction // Store as negative since crash values are negative
-      };
-      
-      // Update UI
-      document.getElementById('userPrediction').textContent = `-${crashPrediction}%`;
-      document.getElementById('placeBetBtn').disabled = true;
-      
-      // Update balance
-      userBalance -= betAmount;
-      document.getElementById('walletBalanceDisplay').textContent = userBalance + ' $BET';
-      
-      console.log("Bet placed:", userBet);
-    }
-    
-    // Initialize app
-    async function init() {
-      // Check if Phantom is installed
-      await checkForPhantom();
-      
-      // Initialize chart
-      initChart();
-      
-      // Start simulation and countdown intervals
-      setInterval(simulateMarket, 500);
-      setInterval(updateCountdown, 1000);
-      
-      // Add event listeners
-      document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
-      document.getElementById('betForm').addEventListener('submit', handleBetSubmit);
-      document.getElementById('closeModalBtn').addEventListener('click', () => {
-        document.getElementById('resultModal').classList.remove('show');
-      });
-      
-      // Generate sample past games
-      generateSamplePastGames();
-    }
-    
-    // Generate sample past games for initial display
-    function generateSamplePastGames() {
-      for (let i = 0; i < 6; i++) {
-        const crashValue = -(Math.random() * 80 + 20);
-        gameState.lastCrash = crashValue;
-        gameState.currentJackpot = Math.floor(Math.random() * 5000) + 3000;
-        gameState.playerCount = Math.floor(Math.random() * 30) + 20;
-        addPastGame();
-      }
-    }
-    
-    // Signature request simulation
-    async function signTransaction(amount, prediction) {
-      if (!phantomWallet) return false;
-      
-      try {
-        const message = `MemeCrash Game: Bet ${amount} $BET on ${prediction}% crash`;
-        const encodedMessage = new TextEncoder().encode(message);
-        
-        const signatureResponse = await phantomWallet.signMessage(encodedMessage, 'utf8');
-        console.log("Transaction signed:", signatureResponse);
-        return true;
-      } catch (err) {
-        console.error("Error signing transaction:", err);
-        alert("Failed to sign transaction: " + err.message);
-        return false;
-      }
-    }
-    
-    // Initialize when page loads
-    window.addEventListener('DOMContentLoaded', init);
-  </script>
+
+        function updateLeaderboard() {
+            // Clear current leaderboard
+            leaderboardBody.innerHTML = "";
+            
+            // Add each prediction
+            predictions.forEach(player => {
+                const row = document.createElement("tr");
+                if (player.result === "Winner") {
+                    row.className = "winner";
+                }
+                
+                // Create masked wallet address display
+                const walletAddress = wallets[player.id] || "";
+                const maskedWallet = walletAddress.length > 8 
+                    ? walletAddress.substring(0, 4) + "..." + walletAddress.substring(walletAddress.length - 4) 
+                    : walletAddress;
+                
+                row.innerHTML = `
+                    <td>${player.id} (${maskedWallet})</td>
+                    <td>${formatPrice(player.prediction)}</td>
+                    <td>${player.difference ? formatPrice(Math.abs(player.difference)) : "-"}</td>
+                    <td>${player.result}</td>
+                `;
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+
+        function calculateResults() {
+            // Calculate difference for each prediction
+            predictions.forEach(player => {
+                player.difference = player.prediction - currentPrice;
+                player.result = "Lost";
+            });
+            
+            // Sort by absolute difference
+            predictions.sort((a, b) => Math.abs(a.difference) - Math.abs(b.difference));
+            
+            // Mark winner
+            if (predictions.length > 0) {
+                predictions[0].result = "Winner";
+            }
+            
+            // Update leaderboard
+            updateLeaderboard();
+        }
+
+        function showResults() {
+            // Update modal text
+            if (predictions.length > 0) {
+                const winner = predictions[0];
+                modalText.innerHTML = `
+                    The Bitcoin price crashed to ${formatPrice(currentPrice)}!<br>
+                    <strong>${winner.id}</strong> had the closest prediction (${formatPrice(winner.prediction)}) 
+                    and won <strong>${jackpotAmount} SOL</strong>!
+                `;
+            } else {
+                modalText.innerHTML = `
+                    The Bitcoin price crashed to ${formatPrice(currentPrice)}!<br>
+                    No players participated in this round.
+                `;
+            }
+            
+            // Show modal
+            resultModal.style.display = "flex";
+        }
+
+        function startNextRound() {
+            // Hide modal
+            resultModal.style.display = "none";
+            
+            // Increment round number
+            roundNumber++;
+            roundCountElement.textContent = `Round #${roundNumber}`;
+            
+            // Reset game state
+            predictions = [];
+            
+            // Reset price to a new starting point (with slight variation)
+            currentPrice = 78726.62 + (Math.random() * 2000 - 1000);
+            updatePriceChange();
+            
+            // Start new round
+            waitForNextRound();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeChart();
+            waitForNextRound();
+            
+            // Set up button event listeners
+            placeBetBtn.addEventListener('click', placeBet);
+            nextRoundBtn.addEventListener('click', startNextRound);
+            
+            // Update stats
+            totalPlayersElement.textContent = totalPlayers;
+            totalJackpotElement.textContent = jackpotAmount;
+            totalGamesElement.textContent = totalGames;
+            roundCountElement.textContent = `Round #${roundNumber}`;
+            
+            // Update price display initially
+            updatePriceChange();
+            
+            // Simulate small market fluctuations during waiting phase
+            setInterval(() => {
+                if (!gameActive) {
+                    // Small random price changes
+                    currentPrice += (Math.random() * 20 - 10);
+                    updateChart(currentPrice);
+                    updatePriceChange();
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
